@@ -1,5 +1,12 @@
 package models
 
 case class User (
-            username: String
-           )
+                id: Int,
+                username: String,
+                jwt: String
+               )
+
+case class UnauthedUser(
+                       username: String,
+                       password: String
+                       )

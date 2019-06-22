@@ -14,7 +14,8 @@ libraryDependencies += "io.circe" %% "circe-core" % "0.12.0-M3"
 libraryDependencies += "io.circe" %% "circe-parser" % "0.12.0-M3"
 libraryDependencies += "io.circe" %% "circe-generic" % "0.12.0-M3"
 libraryDependencies += "com.typesafe.play" %% "play-slick" % "3.0.0"
-
+libraryDependencies += "com.github.t3hnar" %% "scala-bcrypt" % "4.1"
+libraryDependencies += "org.postgresql" % "postgresql" % "42.2.5",
 
 // Adds additional packages into Twirl
 //TwirlKeys.templateImports += "edlav.controllers._"
