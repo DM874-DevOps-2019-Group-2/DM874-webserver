@@ -9,7 +9,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 class JWTAuthentication @Inject()(p: BodyParsers.Default, jWTService: JWTService)(implicit ec: ExecutionContext) extends ActionBuilder[AuthenticatedRequest, AnyContent] {
   override def invokeBlock[A](request: Request[A], block: AuthenticatedRequest[A] => Future[Result]): Future[Result] = {
-    val jwtToken = request.headers.get("dm874_jw_token")
+    val jwtToken = request.headers.get("dm874_jwt")
 
     jwtToken match {
       case Some(token) => jWTService.tryDecode(token).map{ claims =>

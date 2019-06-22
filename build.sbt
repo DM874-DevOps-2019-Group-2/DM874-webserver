@@ -13,6 +13,8 @@ libraryDependencies += "com.pauldijou" %% "jwt-core" % "3.0.1"
 libraryDependencies += "io.circe" %% "circe-core" % "0.12.0-M3"
 libraryDependencies += "io.circe" %% "circe-parser" % "0.12.0-M3"
 libraryDependencies += "io.circe" %% "circe-generic" % "0.12.0-M3"
+libraryDependencies += "com.typesafe.play" %% "play-slick" % "3.0.0"
+
 
 // Adds additional packages into Twirl
 //TwirlKeys.templateImports += "edlav.controllers._"
