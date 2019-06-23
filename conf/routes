@@ -11,6 +11,6 @@ POST     /login                      controllers.HomeController.login
 POST     /register                      controllers.HomeController.register
 
 # Map static resources from the /public folder to the /assets URL path
-GET     /*file               controllers.Assets.versioned(path="/public", file: Asset)
 GET     /static/css/*file               controllers.Assets.versioned(path="/public/static/css", file: Asset)
 GET     /static/js/*file               controllers.Assets.versioned(path="/public/static/js", file: Asset)
+GET     /*path             controllers.HomeController.fallback(path)

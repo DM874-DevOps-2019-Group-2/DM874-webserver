@@ -20,13 +20,14 @@ class HomeController @Inject()(
                                 cc: ControllerComponents,
                                 jwtAuthentication: JWTAuthentication,
                                 jwtService: JWTService,
-                                usersDAO: UsersDAO
+                                usersDAO: UsersDAO,
+                                assets: Assets
                               ) extends AbstractController(cc) {
-  def greet() = Action { request =>
+  def greet(): Action[AnyContent] = Action { request =>
     Ok("Hello")
   }
 
-  def register() = Action.async { implicit req =>
+  def register(): Action[AnyContent] = Action.async { implicit req =>
     import com.github.t3hnar.bcrypt._
     import io.circe.generic.auto._
     import io.circe.parser._
@@ -40,11 +41,11 @@ class HomeController @Inject()(
     }
   }
 
-  def authedGreet() = jwtAuthentication { implicit req =>
+  def authedGreet(): Action[AnyContent] = jwtAuthentication { implicit req =>
     Ok("Authed successfully")
   }
 
-  def login() = Action.async { implicit req =>
+  def login(): Action[AnyContent] = Action.async { implicit req =>
     import com.github.t3hnar.bcrypt._
     import io.circe.generic.auto._
     import io.circe.parser._
@@ -67,5 +68,9 @@ class HomeController @Inject()(
       }.getOrElse(Future.successful(Ok("Failed to decode request")))
       case None => Future.successful(Ok("Failed to parse request"))
     }
+  }
+
+  def fallback(path: String): Action[AnyContent] = Action { implicit req =>
+    Redirect("/")
   }
 }
