@@ -15,7 +15,12 @@ libraryDependencies += "io.circe" %% "circe-parser" % "0.12.0-M3"
 libraryDependencies += "io.circe" %% "circe-generic" % "0.12.0-M3"
 libraryDependencies += "com.typesafe.play" %% "play-slick" % "3.0.0"
 libraryDependencies += "com.github.t3hnar" %% "scala-bcrypt" % "4.1"
-libraryDependencies += "org.postgresql" % "postgresql" % "42.2.5",
+libraryDependencies += "org.postgresql" % "postgresql" % "42.2.5"
+libraryDependencies += "org.apache.kafka" % "kafka-streams" % "2.3.0"
+libraryDependencies += "org.apache.kafka" %% "kafka-streams-scala" % "2.3.0"
+libraryDependencies += "org.apache.kafka" %% "kafka" % "2.3.0"
+libraryDependencies += "org.apache.zookeeper" % "zookeeper" % "3.5.5"
+libraryDependencies += "com.typesafe.akka" %% "akka-stream-kafka" % "1.0.5"
 
 // Adds additional packages into Twirl
 //TwirlKeys.templateImports += "edlav.controllers._"

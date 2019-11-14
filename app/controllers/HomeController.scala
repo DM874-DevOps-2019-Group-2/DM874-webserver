@@ -1,5 +1,7 @@
 package controllers
 
+import akka.stream.scaladsl.{Flow, Sink, Source}
+import helper.AkkaKafkaSendOnce
 import javax.inject._
 import models.{UnauthedUser, User}
 import play.api._
@@ -21,8 +23,26 @@ class HomeController @Inject()(
                                 jwtAuthentication: JWTAuthentication,
                                 jwtService: JWTService,
                                 usersDAO: UsersDAO,
-                                assets: Assets
+                                assets: Assets,
+                                akkaKafkaSendOnce: AkkaKafkaSendOnce
                               ) extends AbstractController(cc) {
+  def userSocket = WebSocket.accept[String, String] { req =>
+    Flow[String].map{ msg =>
+      ///TODO
+
+      //Parse msg
+      val parsed = ??? //msg
+
+      //DB action event source
+      val eventSourceStruct: Future[] = ???
+
+      //Send event to next step (prob auth)
+      akkaKafkaSendOnce.sendExactlyOnce()
+
+      "abc"
+    }
+  }
+
   def greet(): Action[AnyContent] = Action { request =>
     Ok("Hello")
   }
