@@ -1,9 +1,9 @@
 package controllers
 
 import akka.stream.scaladsl.{Flow, Sink, Source}
-import helper.AkkaKafkaSendOnce
+import helper.{AkkaKafkaSendOnce, ClassLogger}
 import javax.inject._
-import models.{UnauthedUser, User}
+import models.{EventSourcingModel, UnauthedUser, User}
 import play.api._
 import play.api.mvc._
 import schema.{DBUser, UsersDAO}
@@ -25,16 +25,31 @@ class HomeController @Inject()(
                                 usersDAO: UsersDAO,
                                 assets: Assets,
                                 akkaKafkaSendOnce: AkkaKafkaSendOnce
-                              ) extends AbstractController(cc) {
+                              ) extends AbstractController(cc) with ClassLogger {
   def userSocket = WebSocket.accept[String, String] { req =>
     Flow[String].map{ msg =>
       ///TODO
 
+      import io.circe.parser._
       //Parse msg
-      val parsed = ??? //msg
+      val parsed = decode[User](msg) match {
+        case Left(_) => {
+          logger.error(s"Failed to parse value ${msg}")
 
-      //DB action event source
-      val eventSourceStruct: Future[] = ???
+        }
+        case Right(value) => {
+
+          //DB action event source
+          val eventSourceRouter: Future[Seq[String]] = ???
+
+          eventSourceRouter.map{ routes =>
+            val eventSourceModel = EventSourcingModel(
+              messageId = 
+            )
+          }
+        }
+      }//msg
+
 
       //Send event to next step (prob auth)
       akkaKafkaSendOnce.sendExactlyOnce()
