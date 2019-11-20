@@ -42,7 +42,17 @@ class HomeController @Inject()(
         val in = Sink.foreach[String]{ msg =>
           //Do something TODO
 
+          //Decode the message to the request type
+
+
           //Db operation, get event source route for type
+          val result: Future[Option[EventSourcingModel]] = ???
+
+          result.map{
+            case None => {
+              logger.error(s"Failed to find event sourcing model for ${msg}")
+            }
+          }
 
         }
 
