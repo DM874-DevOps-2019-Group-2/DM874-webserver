@@ -7,6 +7,7 @@ object OutboundMessage {
 
 case class OutboundMessage(
                           destinationId: Int,
+                          messageId: String,
                           message: String,
                           fromAutoReply: Boolean
                           )

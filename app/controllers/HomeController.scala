@@ -1,5 +1,7 @@
 package controllers
 
+import java.util.UUID
+
 import akka.stream.scaladsl.{Flow, Sink, Source}
 import helper.{AkkaKafkaSendOnce, ClassLogger}
 import javax.inject._
@@ -27,6 +29,9 @@ class HomeController @Inject()(
                                 akkaKafkaSendOnce: AkkaKafkaSendOnce
                               ) extends AbstractController(cc) with ClassLogger {
   def userSocket = WebSocket.accept[String, String] { req =>
+
+    val in = Sink.
+
     Flow[String].map{ msg =>
       ///TODO
 
@@ -37,18 +42,21 @@ class HomeController @Inject()(
           logger.error(s"Failed to parse value ${msg}")
 
         }
-        case Right(value) => {
+        case Right(user) => {
 
           //DB action event source
           val eventSourceRouter: Future[Seq[String]] = ???
 
           eventSourceRouter.map{ routes =>
             val eventSourceModel = EventSourcingModel(
-              messageId = 
+              messageId = UUID.randomUUID().toString,
+              sender = user,
+              messageDestinations = ???,
+              tasks = ???
             )
           }
         }
-      }//msg
+      } // msg
 
 
       //Send event to next step (prob auth)
@@ -56,6 +64,8 @@ class HomeController @Inject()(
 
       "abc"
     }
+
+    Flow.fromSinkAndSource()
   }
 
   def greet(): Action[AnyContent] = Action { request =>
