@@ -2,7 +2,8 @@ package controllers
 
 import java.util.UUID
 
-import akka.stream.scaladsl.{Flow, Sink, Source}
+import akka.stream.{Materializer, OverflowStrategy}
+import akka.stream.scaladsl.{Flow, Sink, Source, SourceQueueWithComplete}
 import helper.{AkkaKafkaSendOnce, ClassLogger}
 import javax.inject._
 import models.{EventSourcingModel, UnauthedUser, User}
@@ -10,6 +11,7 @@ import play.api._
 import play.api.mvc._
 import schema.{DBUser, UsersDAO}
 import security.{JWTAuthentication, JWTService}
+import services.WebsocketManager
 
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -26,46 +28,40 @@ class HomeController @Inject()(
                                 jwtService: JWTService,
                                 usersDAO: UsersDAO,
                                 assets: Assets,
-                                akkaKafkaSendOnce: AkkaKafkaSendOnce
-                              ) extends AbstractController(cc) with ClassLogger {
+                                akkaKafkaSendOnce: AkkaKafkaSendOnce,
+                              )(implicit mat: Materializer) extends AbstractController(cc) with ClassLogger {
   def userSocket = WebSocket.accept[String, String] { req =>
+    import scala.concurrent.ExecutionContext.Implicits.global
 
-    val in = Sink.
+    req.headers.get("dm874_jwt") match {
+      case Some(jwt) => {
+        //Create a queue'd source and bundle it with the request
+        val out = Source.queue[String](1000, OverflowStrategy.backpressure).merge(Source.maybe[String])
 
-    Flow[String].map{ msg =>
-      ///TODO
+        //Handle incoming through the socket
+        val in = Sink.foreach[String]{ msg =>
+          //Do something TODO
 
-      import io.circe.parser._
-      //Parse msg
-      val parsed = decode[User](msg) match {
-        case Left(_) => {
-          logger.error(s"Failed to parse value ${msg}")
+          //Db operation, get event source route for type
 
         }
-        case Right(user) => {
 
-          //DB action event source
-          val eventSourceRouter: Future[Seq[String]] = ???
-
-          eventSourceRouter.map{ routes =>
-            val eventSourceModel = EventSourcingModel(
-              messageId = UUID.randomUUID().toString,
-              sender = user,
-              messageDestinations = ???,
-              tasks = ???
-            )
-          }
+        Flow.fromSinkAndSourceMat[String, String, Future[akka.Done], SourceQueueWithComplete[String], Unit](in, out).apply{ case(_, queue) =>
+          WebsocketManager.addClient(jwt, queue)
         }
-      } // msg
+      }
+      case None => {
+        //Return error TODO
+        val out = Source.single[String](???)
 
+        //Do nothing, no auth??
+        val in = Sink.ignore
 
-      //Send event to next step (prob auth)
-      akkaKafkaSendOnce.sendExactlyOnce()
-
-      "abc"
+        Flow.fromSinkAndSource(in, out)
+      }
     }
 
-    Flow.fromSinkAndSource()
+
   }
 
   def greet(): Action[AnyContent] = Action { request =>
