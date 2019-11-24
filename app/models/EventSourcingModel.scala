@@ -1,8 +1,8 @@
 package models
 
 object EventSourcingModel {
-  implicit val dec: io.circe.Decoder[OutboundMessage] = io.circe.generic.semiauto.deriveDecoder[OutboundMessage]
-  implicit val enc: io.circe.Encoder[OutboundMessage] = io.circe.generic.semiauto.deriveEncoder[OutboundMessage]
+  implicit val dec: io.circe.Decoder[EventSourcingModel] = io.circe.generic.semiauto.deriveDecoder[EventSourcingModel]
+  implicit val enc: io.circe.Encoder[EventSourcingModel] = io.circe.generic.semiauto.deriveEncoder[EventSourcingModel]
 }
 
 case class EventSourcingModel(

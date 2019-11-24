@@ -15,10 +15,8 @@ import scala.concurrent.Future
 
 @Singleton
 class AkkaKafkaSendOnce @Inject()(
-                                 implicit actorSystem: ActorSystem,
-                                 implicit val materializer: Materializer,
                                  config: play.api.Configuration
-                                 ) {
+                                 )(implicit actorSystem: ActorSystem, val materializer: Materializer) {
   import scala.concurrent.ExecutionContext.Implicits.global
   val producerSettings = ProducerSettings(config.underlying.getConfig("akka.kafka.producer"), new StringSerializer, new StringSerializer)
       .withBootstrapServers(config.get[String]("bootstrap.servers"))

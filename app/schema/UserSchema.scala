@@ -29,3 +29,7 @@ class UsersDAO @Inject()(protected val dbConfigProvider: DatabaseConfigProvider)
 
   def check(user: User) = db.run(users.filter(_.id === user.id).filter(_.username === user.username).exists.result)
 }
+
+object UsersTable {
+  val users = TableQuery[UsersTable]
+}
