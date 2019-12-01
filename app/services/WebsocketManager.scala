@@ -6,10 +6,14 @@ import models.User
 import scala.collection.concurrent.TrieMap
 
 object WebsocketManager {
-  //SessionId : Queue
-  val sockets = new TrieMap[String, SourceQueue[String]]()
+  sealed trait Status
+  case object NotYetAuthorized extends Status
+  case object Authorized extends Status
 
-  def addClient(jwt: String, pub: SourceQueue[String]) = sockets.update(jwt, pub)
+  //SessionId : (Status | Queue)
+  val sockets = new TrieMap[String, (SourceQueue[String], Status)]()
+
+  def addClient(jwt: String, pub: SourceQueue[String], status: Status) = sockets.update(jwt, (pub, status))
 
   def removeClient(jwt: String) = sockets.remove(jwt)
 }

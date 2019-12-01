@@ -64,7 +64,9 @@ class MessageHandlerService (
       //File store upload, then notification
     case RequestType.UploadHandlerSnippet => {
       //Todo Handle data?
-      fileStore.putAsync(config.get[String]("user.scripts.bucket"), user.id.toString, "")
+      val data: String = ???
+
+      fileStore.putAsync(config.get[String]("user.scripts.bucket"), user.id.toString, data)
     }
   }
 }

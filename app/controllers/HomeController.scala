@@ -6,7 +6,7 @@ import akka.stream.{Materializer, OverflowStrategy}
 import akka.stream.scaladsl.{Flow, Sink, Source, SourceQueueWithComplete}
 import helper.{AkkaKafkaSendOnce, ClassLogger}
 import javax.inject._
-import models.{EventSourcingModel, RequestType, UnauthedUser, User}
+import models.{EventSourcingModel, RequestType, UnauthedUser, User, UserWithSession}
 import play.api._
 import play.api.db.slick.{DatabaseConfigProvider, HasDatabaseConfigProvider}
 import play.api.mvc._
@@ -31,15 +31,16 @@ class HomeController @Inject()(
                                 jwtService: JWTService,
                                 usersDAO: UsersDAO,
                                 assets: Assets,
+                                configuration: play.api.Configuration,
                                 akkaKafkaSendOnce: AkkaKafkaSendOnce,
                                 protected val dbConfigProvider: DatabaseConfigProvider,
                                 dependencyInjector: services.DependencyInjector
                               )(implicit mat: Materializer) extends AbstractController(cc) with ClassLogger with HasDatabaseConfigProvider[JdbcProfile] {
   def userSocket = WebSocket.accept[String, String] { req =>
     import scala.concurrent.ExecutionContext.Implicits.global
+    import io.circe.syntax._
 
-    //Try to decode JWT, then decode it from json and finally check the db for correctness
-    val authedUser = (req.headers.get("dm874_jwt") match {
+    val oUser = (req.headers.get("dm874_jwt") match {
       case Some(jwt) => {
         //Authenticate JWT
         (dependencyInjector.jwtService.tryDecode(jwt) match {
@@ -57,24 +58,9 @@ class HomeController @Inject()(
         }
       }
       case None => None
-    }) match {
-      case Some(user) => {
-        import profile.api._
-        db.run(UsersTable.users.filter(_.id === user.id).filter(_.username === user.username).exists.result).map {
-          case true => Some(user)
-          case false => None
-        }
-      }
-      case None => {
-        logger.error(s"Failed to decode user")
-        Future.successful(None)
-      }
-    }
+    })
 
-    //Now we convert the future to a source that either instantly closes or streams
-    import io.circe.syntax._
-
-    val fut = authedUser.map {
+    oUser match {
       case None => {
         val out = Source.single[String](models.Error("Failed to authenticate user, please try again").asJson.noSpaces)
 
@@ -87,31 +73,49 @@ class HomeController @Inject()(
         val sessionId = user.id.toString + java.util.UUID.randomUUID().toString
 
         //Create a queue'd source and bundle it with the request
-        val out = Source.queue[String](1000, OverflowStrategy.backpressure).merge(Source.maybe[String])
+        val authTopic = configuration.get[String]("auth.topic")
+
+        val out = Source.fromFutureSource(akkaKafkaSendOnce.sendExactlyOnce(authTopic, UserWithSession(sessionId, user).asJson.noSpaces).map(_ =>
+          Source.queue[String](1000, OverflowStrategy.backpressure).merge(Source.maybe[String])
+        ))
 
         //Handle incoming through the socket
-        val in = Sink.foreach[String]{ msg =>
+        val in = Sink.foreachAsync[String](2){ msg =>
           //Decode the message to the request type
-          import io.circe.syntax._
           import io.circe.parser._
 
-          decode[models.RequestType](msg) match {
+          val f = decode[models.RequestType](msg) match {
             case Left(e) => {
               logger.error(s"Error: ${e}")
               Future.successful(akka.Done)
             }
-            case Right(rt) => dependencyInjector.messageHandlerService.handleRequest(sessionId, user, rt)
+            case Right(rt) => {
+              //Check if the user is authed
+              WebsocketManager.sockets.get(sessionId) match {
+                case None => {
+                  logger.error(s"Error: Failed to get user for sessionId $sessionId")
+                  Future.successful(akka.Done)
+                }
+                case Some((queue, status)) => status match {
+                  case WebsocketManager.Authorized => dependencyInjector.messageHandlerService.handleRequest(sessionId, user, rt)
+                  case x => {
+                    logger.error(s"Error: User not authorized, status is ${x}")
+                    Future.successful(akka.Done)
+                  }
+                }
+              }
+
+            }
           }
+
+          f.map(_ => ())
         }
 
-        Flow.fromSinkAndSourceMat[String, String, Future[akka.Done], SourceQueueWithComplete[String], Unit](in, out).apply { case (_, queue) =>
-          WebsocketManager.addClient(sessionId, queue)
+        Flow.fromSinkAndSourceMat[String, String, Future[akka.Done], Future[SourceQueueWithComplete[String]], Unit](in, out).apply { case (_, q) =>
+          q.map(queue => WebsocketManager.addClient(sessionId, queue, WebsocketManager.NotYetAuthorized))
         }
       }
     }
-
-    //Since the flow is dynamic by operation, we have to wait for the future. Unfortunately play has not implemented a way to invoke the wrapping flow's mapAsync, so therefore we must wait for the future
-    Await.result(fut, scala.concurrent.duration.Duration.Inf)
   }
 
   def greet(): Action[AnyContent] = Action { request =>
