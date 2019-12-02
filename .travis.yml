@@ -1,3 +1,22 @@
-language: scala
-scala:
-  - 2.12
+language: minimal
+services:
+- docker
+env:
+  global:
+  - CONTAINER=webserver-container
+  - SERVICE=webserver
+  - DOCKER_SLUG=dm874/webserver
+  - secure: gLF4ihpqrbMa1mRet7C75qtYNl0fTT9tqgtCiRvsItVSEE76syv5r552Vo0FOgTJM5j9vlPQ8WmmNUT/gTwbLp3vaYPMtA2ivtd0Lra7O3q2Bf6U/qI91fP/6bpgtFYsrc65gJbUA6XLuOFFTKlimojj6EVkSK1URdYMrzES7dgdrDBAYiz4uf1NanO5ziqcLZJOe9ShBNo+gIf2keRE4fORJnFUT2S+eAH8jXmGv6ACchlL+DueBKftJC+mY0RWeL6JzlDUYekZytCn/htfzGj0soSy+HNgRPE2iNGW56+0UB1bbuxYyZJ9HlDyXzBtvZsyo2Eod/+vGU0x0AaN71BmUQMonpBcBZhoi8e/WNcT9MieiRVph59C4iLgI+Dkd+idluDgWlbTOwxb/wk8ziUjocqSJ4P++G+oVM9ZgTEKbAISZUhGyqMBrtL/trsFvnC68KzNJr0G1ugwNHsZFnlv4G4c7J/MpIV6Lx+NF13VgSewvpbARYNGeHlVuCuzCmPGzhEbFcyxqgB2HmfQYBiv92V7Uq8+yFHRTFYg5VD2rJnHokMHRks978GqKhZ7kBMHgSOkeTupn+aKTZTAJIt7U9cgVeGsHNE2ELC/8pNBhIU81ayZpxGJ58YHUaiJQz2RHgOdKVSNfwIQW9l7SifOfIQ63PhKLRajigRUoHw=
+stages:
+- build
+- push
+before_install: docker pull dm874/deploy:latest
+jobs:
+  include:
+  - stage: build
+    script: docker build -t webserver .
+  - stage: push
+    script: sh docker_push.sh
+deploy:
+  provider: script
+  script: kubectl_set.sh
