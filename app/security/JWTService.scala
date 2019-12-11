@@ -9,7 +9,7 @@ import scala.util.Try
 
 @Singleton
 class JWTService @Inject()(config: Configuration) {
-  val sc = config.get[String]("play.http.secret.key")
+  val sc = config.get[String]("jwtsecret")
   val algo = "HS256"
 
   def createToken(payload: String): String = Jwt.encode(payload, sc, JwtAlgorithm.HS256)

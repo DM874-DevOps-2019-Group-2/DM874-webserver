@@ -6,6 +6,7 @@ import com.google.inject.Inject
 import helper.AkkaKafkaSendOnce
 import play.api.db.slick.DatabaseConfigProvider
 import security.JWTService
+import sdis.client.RedisClient
 
 @Singleton
 class DependencyInjector @Inject()(
@@ -14,8 +15,10 @@ class DependencyInjector @Inject()(
                                   )(implicit system: ActorSystem, mat: Materializer) {
   import scala.concurrent.ExecutionContext.Implicits.global
 
+  lazy val redisClient = RedisClient.getInstance(config.getString("redis.hostname").get, config.getInt("redis.port").get)
+
   lazy val fileStore = new FileStore()
   lazy val jwtService = new JWTService(config)
-  lazy val messageHandlerService = new MessageHandlerService(jwtService, dbConfigProvider, akkaKafkaSendOnce, fileStore)
+  lazy val messageHandlerService = new MessageHandlerService(jwtService, dbConfigProvider, akkaKafkaSendOnce, fileStore, config)
   lazy val akkaKafkaSendOnce = new AkkaKafkaSendOnce(config)
 }
