@@ -9,12 +9,8 @@ import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.Duration
 
 object WebsocketManager {
-  sealed trait Status
-  case object NotYetAuthorized extends Status
-  case object Authorized extends Status
-
-  //SessionId : (Status | Queue)
-  val sockets = new TrieMap[String, (SourceQueue[String], Status)]()
+  //SessionId : Queue
+  val sockets = new TrieMap[String, SourceQueue[String]]()
   val sessionSuicide = new TrieMap[String, Cancellable]()
 
   def updateTTL(sessionId: String, ttl: Duration)(implicit ec: ExecutionContext, system: ActorSystem) = {
@@ -26,8 +22,8 @@ object WebsocketManager {
     })
   }
 
-  def addClient(sessionId: String, pub: SourceQueue[String], status: Status, ttl: Duration)(implicit ec: ExecutionContext, system: ActorSystem) = {
-    sockets.update(sessionId, (pub, status))
+  def addClient(sessionId: String, pub: SourceQueue[String], ttl: Duration)(implicit ec: ExecutionContext, system: ActorSystem) = {
+    sockets.update(sessionId, pub)
     updateTTL(sessionId, ttl)
   }
 

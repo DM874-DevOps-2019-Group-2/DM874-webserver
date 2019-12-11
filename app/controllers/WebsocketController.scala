@@ -7,7 +7,7 @@ import akka.stream.{Materializer, OverflowStrategy}
 import akka.stream.scaladsl.{Flow, Sink, Source, SourceQueueWithComplete}
 import helper.{AkkaKafkaSendOnce, ClassLogger}
 import javax.inject._
-import models.{EventSourcingModel, RequestType, UnauthedUser, User, UserWithSession}
+import models.{EventSourcingModel, RequestType, ResponseType, UnauthedUser, User, UserWithSession}
 import play.api._
 import play.api.db.slick.{DatabaseConfigProvider, HasDatabaseConfigProvider}
 import play.api.mvc._
@@ -57,6 +57,9 @@ class WebsocketController @Inject()(
       case None => None
     })
 
+    import scala.concurrent.duration._
+    val websocketTtl = configuration.getInt("connection.ttlseconds").get
+
     oUser match {
       //Do nothing
       case None => {
@@ -75,15 +78,17 @@ class WebsocketController @Inject()(
 
         val out = Source.fromFutureSource(akkaKafkaSendOnce.sendExactlyOnce(authTopic, UserWithSession(sessionId, user).asJson.noSpaces).map(_ =>
           Source.queue[String](1000, OverflowStrategy.backpressure).merge(Source.maybe[String])
+          //Ping every ttl*0.8 time
+          .merge(Source(0 to Int.MaxValue).throttle(1, (websocketTtl*0.8) seconds).map(_ => (ResponseType.Ping: ResponseType).asJson.noSpaces))
+          //on every request, refresh ttl
+          .map{ x =>
+            WebsocketManager.updateTTL(sessionId, websocketTtl seconds)
+            x
+          }
         ))
-
-        import scala.concurrent.duration._
-        val websocketTtl = configuration.getInt("connection.ttlseconds").get seconds
 
         //Handle incoming through the socket
         val in = Sink.foreachAsync[String](2){ msg =>
-          WebsocketManager.updateTTL(sessionId, websocketTtl)
-
           //Decode the message to the request type
           import io.circe.parser._
 
@@ -92,8 +97,12 @@ class WebsocketController @Inject()(
               logger.error(s"Error: ${e}")
               Future.successful(akka.Done)
             }
-            case Right(rt) => {
-              dependencyInjector.messageHandlerService.handleRequest(sessionId, user, rt)
+            case Right(rt) => rt match {
+              case RequestType.Pong => {
+                WebsocketManager.updateTTL(sessionId, websocketTtl seconds)
+                Future.successful(akka.Done)
+              }
+              case _ => dependencyInjector.messageHandlerService.handleRequest(sessionId, user, rt)
             }
           }
 
@@ -101,7 +110,7 @@ class WebsocketController @Inject()(
         }
 
         Flow.fromSinkAndSourceMat[String, String, Future[akka.Done], Future[SourceQueueWithComplete[String]], Unit](in, out).apply { case (_, q) =>
-          q.map(queue => WebsocketManager.addClient(sessionId, queue, WebsocketManager.NotYetAuthorized, websocketTtl))
+          q.map(queue => WebsocketManager.addClient(sessionId, queue, websocketTtl seconds))
         }
       }
     }
