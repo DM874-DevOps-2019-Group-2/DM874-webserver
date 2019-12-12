@@ -27,10 +27,8 @@ class WebsocketController @Inject()(
                                 jwtService: JWTService,
                                 assets: Assets,
                                 configuration: play.api.Configuration,
-                                akkaKafkaSendOnce: AkkaKafkaSendOnce,
-                                protected val dbConfigProvider: DatabaseConfigProvider,
                                 dependencyInjector: services.DependencyInjector
-                              )(implicit mat: Materializer, system: ActorSystem) extends AbstractController(cc) with ClassLogger with HasDatabaseConfigProvider[JdbcProfile] {
+                              )(implicit mat: Materializer, system: ActorSystem) extends AbstractController(cc) with ClassLogger {
   val listenTopic = configuration.getString("kafka.streams.topic").get
   val websocketTtl = configuration.getInt("connection.ttlseconds").get
 

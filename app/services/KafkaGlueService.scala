@@ -1,6 +1,6 @@
 package services
 
-import helper.ClassLogger
+import helper.{ClassLogger, KafkaHelper}
 import kafka.Entrypoint
 import models.{MessageDestination, ResponseType}
 
@@ -9,8 +9,13 @@ import scala.util.{Failure, Success, Try}
 
 class KafkaGlueService(
                         config: com.typesafe.config.Config,
-                        entrypoint: Entrypoint
+                        entrypoint: Entrypoint,
+                        kafkaHelper: KafkaHelper
                       )(implicit ec: ExecutionContext) extends ClassLogger {
+  kafkaHelper.createTopics(Seq(
+    config.getString("kafka.streams.topic")
+  ))
+
   val started = entrypoint.start{ case (k, v) =>
     Try {
       import io.circe.syntax._

@@ -13,13 +13,12 @@ import org.apache.kafka.common.serialization.StringSerializer
 
 import scala.concurrent.Future
 
-@Singleton
-class AkkaKafkaSendOnce @Inject()(
+class AkkaKafkaSendOnce (
                                  config: play.api.Configuration
                                  )(implicit actorSystem: ActorSystem, val materializer: Materializer) {
   import scala.concurrent.ExecutionContext.Implicits.global
   val producerSettings = ProducerSettings(config.underlying.getConfig("akka.kafka.producer"), new StringSerializer, new StringSerializer)
-      .withBootstrapServers(config.get[String]("bootstrap.servers"))
+      .withBootstrapServers(config.get[String]("kafka.bootstrap.servers"))
 
 
   def sendExactlyOnce(topic: String, data: String): Future[Done] = {

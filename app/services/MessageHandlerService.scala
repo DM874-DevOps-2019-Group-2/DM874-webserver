@@ -17,12 +17,11 @@ import scala.util.{Failure, Success}
 
 class MessageHandlerService (
                             jwtService: JWTService,
-                            protected val dbConfigProvider: DatabaseConfigProvider,
                             akkaKafkaSendOnce: AkkaKafkaSendOnce,
                             storage: Storage,
                             config: play.api.Configuration
                             )(implicit executionContext: ExecutionContext)
-  extends HasDatabaseConfigProvider[JdbcProfile] with ClassLogger {
+  extends ClassLogger {
   val codeSnippetBucket = config.getString("code-snippet.bucket").get
   val codeSnippetTopic = config.getString("code-snippet.topic").get
 

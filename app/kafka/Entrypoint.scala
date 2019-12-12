@@ -51,7 +51,7 @@ class Entrypoint (
   //The application conf contains the correctly mapped key -> value pair under the "kafka" subconfiguration
   private val properties = {
     val p = new Properties()
-    val kafkaConfig = config.getConfig("kafka.streams.arguments")
+    val kafkaConfig = config.getConfig("kafka.streams.direct-arguments")
     kafkaConfig.entrySet().asScala.toSeq.map(x => (x.getKey, kafkaConfig.getString(x.getKey))).foreach { case (k, v) => p.setProperty(k, v) }
     p.put(StreamsConfig.APPLICATION_ID_CONFIG, UUID.randomUUID().toString)
     p.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, config.getString("kafka.bootstrap.servers"))
@@ -68,7 +68,7 @@ class Entrypoint (
   private val builder = new StreamsBuilder
 
   // We create two readers
-  private val stream = builder.stream[Key, Data](topic = config.getString("topic.consumer"))
+  private val stream = builder.stream[Key, Data](topic = config.getString("kafka.streams.topic"))
 
   type StartHandler = (Key, Data) => DynamicallyRoutedData
 
