@@ -7,7 +7,7 @@ import akka.stream.{Materializer, OverflowStrategy}
 import akka.stream.scaladsl.{Flow, Sink, Source, SourceQueueWithComplete}
 import com.google.inject._
 import helper.{AkkaKafkaSendOnce, ClassLogger}
-import models.{EventSourcingModel, RequestType, ResponseType, UnauthedUser, User, UserWithSession}
+import models.{EventSourcingModel, RequestType, ResponseType, User}
 import play.api._
 import play.api.db.slick.{DatabaseConfigProvider, HasDatabaseConfigProvider}
 import play.api.mvc._
@@ -76,7 +76,7 @@ class WebsocketController @Inject()(
         val out = {
           Source.queue[String](1000, OverflowStrategy.backpressure).merge(Source.maybe[String])
             //Ping every ttl*0.8 time
-            .merge(Source(0 to Int.MaxValue).throttle(1, (websocketTtl * 0.8) seconds).map(_ => (ResponseType.Ping: ResponseType).asJson.noSpaces))
+            .merge(Source(1 to Int.MaxValue).throttle(1, (websocketTtl * 0.8) seconds).map(_ => (ResponseType.Ping: ResponseType).asJson.noSpaces))
             //on every request, refresh ttl
             .map { x =>
               dependencyInjector.redisClient.run(expireQuery)
