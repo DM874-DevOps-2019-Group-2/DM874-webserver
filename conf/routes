@@ -5,12 +5,9 @@
 
 # An example controller showing a sample home page
 GET     /                           controllers.Assets.at(path="index.html")
-GET     /greet                      controllers.HomeController.greet
-GET     /authedGreet                controllers.HomeController.authedGreet
-POST     /login                      controllers.HomeController.login
-POST     /register                      controllers.HomeController.register
+GET     /ws                      controllers.WebsocketController.userSocket
 
 # Map static resources from the /public folder to the /assets URL path
 GET     /static/css/*file               controllers.Assets.versioned(path="/public/static/css", file: Asset)
 GET     /static/js/*file               controllers.Assets.versioned(path="/public/static/js", file: Asset)
-GET     /*path             controllers.HomeController.fallback(path)
+#GET     /*path             controllers.HomeController.fallback(path)

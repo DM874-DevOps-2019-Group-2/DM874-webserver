@@ -46,10 +46,10 @@ class Entrypoint (
 
     val serde = new DynamicTopicSerde
   }
+  val config = configuration.underlying
 
   //The application conf contains the correctly mapped key -> value pair under the "kafka" subconfiguration
   private val properties = {
-    val config = configuration.underlying
     val p = new Properties()
     val kafkaConfig = config.getConfig("kafka.streams.arguments")
     kafkaConfig.entrySet().asScala.toSeq.map(x => (x.getKey, kafkaConfig.getString(x.getKey))).foreach { case (k, v) => p.setProperty(k, v) }

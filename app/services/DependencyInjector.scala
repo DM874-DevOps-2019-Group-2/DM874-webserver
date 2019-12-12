@@ -9,6 +9,8 @@ import kafka.Entrypoint
 import play.api.db.slick.DatabaseConfigProvider
 import security.JWTService
 import sdis.client.RedisClient
+import com.google.inject._
+
 
 @Singleton
 class DependencyInjector @Inject()(

@@ -6,7 +6,7 @@ import models.User
 
 import scala.collection.concurrent.TrieMap
 import scala.concurrent.ExecutionContext
-import scala.concurrent.duration.Duration
+import scala.concurrent.duration.{Duration, FiniteDuration}
 
 object WebsocketManager {
   //SessionId : Queue
@@ -16,7 +16,7 @@ object WebsocketManager {
   val sockets = new TrieMap[SessionId, SourceQueue[String]]()
   val sessionSuicide = new TrieMap[SessionId, Cancellable]()
 
-  def updateTTL(sessionId: String, ttl: Duration)(implicit ec: ExecutionContext, system: ActorSystem) = {
+  def updateTTL(sessionId: String, ttl: FiniteDuration)(implicit ec: ExecutionContext, system: ActorSystem) = {
     sessionSuicide.remove(sessionId).map(_.cancel())
 
     sessionSuicide.update(sessionId, system.scheduler.scheduleOnce(ttl) {
@@ -25,7 +25,7 @@ object WebsocketManager {
     })
   }
 
-  def addClient(sessionId: String, userId: Int, pub: SourceQueue[String], ttl: Duration)(implicit ec: ExecutionContext, system: ActorSystem) = {
+  def addClient(sessionId: String, userId: Int, pub: SourceQueue[String], ttl: FiniteDuration)(implicit ec: ExecutionContext, system: ActorSystem) = {
     sockets.update(sessionId, pub)
     userSessions.get(userId) match {
       case Some(value) => userSessions.update(userId, value ++ Set(sessionId))

@@ -5,15 +5,14 @@ import java.util.UUID
 import akka.actor.ActorSystem
 import akka.stream.{Materializer, OverflowStrategy}
 import akka.stream.scaladsl.{Flow, Sink, Source, SourceQueueWithComplete}
+import com.google.inject._
 import helper.{AkkaKafkaSendOnce, ClassLogger}
-import javax.inject._
 import models.{EventSourcingModel, RequestType, ResponseType, UnauthedUser, User, UserWithSession}
 import play.api._
 import play.api.db.slick.{DatabaseConfigProvider, HasDatabaseConfigProvider}
 import play.api.mvc._
-import schema.{DBUser, UsersDAO, UsersTable}
 import sdis.operations.StringOps
-import security.{JWTAuthentication, JWTService}
+import security.JWTService
 import services.WebsocketManager
 import slick.jdbc.JdbcProfile
 
@@ -25,7 +24,6 @@ import scala.util.{Failure, Success}
 @Singleton
 class WebsocketController @Inject()(
                                 cc: ControllerComponents,
-                                jwtAuthentication: JWTAuthentication,
                                 jwtService: JWTService,
                                 assets: Assets,
                                 configuration: play.api.Configuration,
@@ -105,7 +103,7 @@ class WebsocketController @Inject()(
           f.map(_ => ())
         }
 
-        Flow.fromSinkAndSourceMat[String, String, Future[akka.Done], SourceQueueWithComplete[String], Unit](in, out).apply { case (_, q) =>
+        Flow.fromSinkAndSourceMat(in, out) { case (_, q) =>
           val insQs = sdis.operations.SetOps.sadd(user.id.toString, listenTopic)
           dependencyInjector.redisClient.run(insQs)
           dependencyInjector.redisClient.run(expireQuery)
