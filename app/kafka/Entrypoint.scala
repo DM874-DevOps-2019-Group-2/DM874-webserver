@@ -21,7 +21,7 @@ object Entrypoint {
 }
 
 class Entrypoint (
-                   config: com.typesafe.config.Config
+                   configuration: play.api.Configuration
                  ) extends ClassLogger {
   import Entrypoint._
 
@@ -49,6 +49,7 @@ class Entrypoint (
 
   //The application conf contains the correctly mapped key -> value pair under the "kafka" subconfiguration
   private val properties = {
+    val config = configuration.underlying
     val p = new Properties()
     val kafkaConfig = config.getConfig("kafka.streams.arguments")
     kafkaConfig.entrySet().asScala.toSeq.map(x => (x.getKey, kafkaConfig.getString(x.getKey))).foreach { case (k, v) => p.setProperty(k, v) }

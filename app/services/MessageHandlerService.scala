@@ -9,7 +9,6 @@ import com.google.cloud.storage.{BlobInfo, Storage}
 import helper.{AkkaKafkaSendOnce, ClassLogger}
 import models.{CodeSnippetNotification, EventSourcingModel, RequestType, ResponseType, User}
 import play.api.db.slick.{DatabaseConfigProvider, HasDatabaseConfigProvider}
-import schema.UsersTable
 import security.JWTService
 import slick.jdbc.JdbcProfile
 
@@ -21,7 +20,6 @@ class MessageHandlerService (
                             protected val dbConfigProvider: DatabaseConfigProvider,
                             akkaKafkaSendOnce: AkkaKafkaSendOnce,
                             storage: Storage,
-                            fileStore: FileStore,
                             config: play.api.Configuration
                             )(implicit executionContext: ExecutionContext)
   extends HasDatabaseConfigProvider[JdbcProfile] with ClassLogger {
