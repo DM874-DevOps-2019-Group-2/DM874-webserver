@@ -109,7 +109,7 @@ class WebsocketController @Inject()(
           val insQs = sdis.operations.SetOps.sadd(user.id.toString, listenTopic)
           dependencyInjector.redisClient.run(insQs)
           dependencyInjector.redisClient.run(expireQuery)
-          WebsocketManager.addClient(sessionId, q, websocketTtl seconds)
+          WebsocketManager.addClient(sessionId, user.id, q, websocketTtl seconds)
         }
       }
     }

@@ -10,8 +10,11 @@ import scala.concurrent.duration.Duration
 
 object WebsocketManager {
   //SessionId : Queue
-  val sockets = new TrieMap[String, SourceQueue[String]]()
-  val sessionSuicide = new TrieMap[String, Cancellable]()
+  type SessionId = String
+
+  val userSessions = new TrieMap[Int, Set[SessionId]]
+  val sockets = new TrieMap[SessionId, SourceQueue[String]]()
+  val sessionSuicide = new TrieMap[SessionId, Cancellable]()
 
   def updateTTL(sessionId: String, ttl: Duration)(implicit ec: ExecutionContext, system: ActorSystem) = {
     sessionSuicide.remove(sessionId).map(_.cancel())
@@ -22,10 +25,14 @@ object WebsocketManager {
     })
   }
 
-  def addClient(sessionId: String, pub: SourceQueue[String], ttl: Duration)(implicit ec: ExecutionContext, system: ActorSystem) = {
+  def addClient(sessionId: String, userId: Int, pub: SourceQueue[String], ttl: Duration)(implicit ec: ExecutionContext, system: ActorSystem) = {
     sockets.update(sessionId, pub)
+    userSessions.get(userId) match {
+      case Some(value) => userSessions.update(userId, value ++ Set(sessionId))
+      case None => userSessions.update(userId, Set(sessionId))
+    }
     updateTTL(sessionId, ttl)
   }
 
-  def removeClient(sessionId: String) = sockets.remove(sessionId)
+  def removeClient(sessionId: String): Option[SourceQueue[String]] = sockets.remove(sessionId)
 }

@@ -28,9 +28,6 @@ class MessageHandlerService (
   val codeSnippetBucket = config.getString("code-snippet.bucket").get
   val codeSnippetTopic = config.getString("code-snippet.topic").get
 
-  import dbConfig.profile._
-  import dbConfig.profile.api._
-
   def handleRequest(sessionId: String, user: User, requestType: RequestType): Future[akka.Done] = requestType match {
     case RequestType.SendMessage(message, destinationUsers) => {
       val dbOp: Future[Option[Seq[(String, String)]]] = ???
