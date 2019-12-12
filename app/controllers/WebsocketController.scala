@@ -27,7 +27,6 @@ class WebsocketController @Inject()(
                                 cc: ControllerComponents,
                                 jwtAuthentication: JWTAuthentication,
                                 jwtService: JWTService,
-                                usersDAO: UsersDAO,
                                 assets: Assets,
                                 configuration: play.api.Configuration,
                                 akkaKafkaSendOnce: AkkaKafkaSendOnce,

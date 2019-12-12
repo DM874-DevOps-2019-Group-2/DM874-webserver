@@ -1,8 +1,13 @@
 package services
 
+import java.util.UUID
+import java.util.concurrent.TimeUnit
+
 import akka.Done
+import akka.stream.QueueOfferResult
+import com.google.cloud.storage.{BlobInfo, Storage}
 import helper.{AkkaKafkaSendOnce, ClassLogger}
-import models.{EventSourcingModel, RequestType, User}
+import models.{CodeSnippetNotification, EventSourcingModel, RequestType, ResponseType, User}
 import play.api.db.slick.{DatabaseConfigProvider, HasDatabaseConfigProvider}
 import schema.UsersTable
 import security.JWTService
@@ -15,10 +20,14 @@ class MessageHandlerService (
                             jwtService: JWTService,
                             protected val dbConfigProvider: DatabaseConfigProvider,
                             akkaKafkaSendOnce: AkkaKafkaSendOnce,
+                            storage: Storage,
                             fileStore: FileStore,
                             config: play.api.Configuration
                             )(implicit executionContext: ExecutionContext)
   extends HasDatabaseConfigProvider[JdbcProfile] with ClassLogger {
+  val codeSnippetBucket = config.getString("code-snippet.bucket").get
+  val codeSnippetTopic = config.getString("code-snippet.topic").get
+
   import dbConfig.profile._
   import dbConfig.profile.api._
 
@@ -57,15 +66,23 @@ class MessageHandlerService (
         }
       }
     }
-
-    //Handle it here
-    case RequestType.ChangePassword(newPassword) => {
-      import com.github.t3hnar.bcrypt._
-      db.run(UsersTable.users.filter(_.id === user.id).filter(_.username === user.username).map(_.password).update(newPassword.bcrypt)).map(_ => Done)
-    }
     //Generate filestore URL
     case RequestType.UploadHandlerSnippet => {
-      ???
+      import io.circe.syntax._
+
+      akkaKafkaSendOnce.sendExactlyOnce(codeSnippetTopic, CodeSnippetNotification(codeSnippetBucket, user.id.toString, CodeSnippetNotification.Insert).asJson.noSpaces).flatMap{ _ =>
+        val url = storage.signUrl(BlobInfo.newBuilder(codeSnippetBucket, user.id.toString).build(), 1, TimeUnit.HOURS).toString
+
+        val offer = WebsocketManager.sockets.get(sessionId).map(_.offer((ResponseType.CodeSnippetUploadUrl(url): ResponseType).asJson.noSpaces)).getOrElse(Future.successful(QueueOfferResult.Failure(new Exception("Failed to find socket"))))
+
+        offer.map { x => x match {
+          case QueueOfferResult.Enqueued => akka.Done
+          case _ => {
+            logger.error(s"Failed to publish item, queue said ${x}")
+            akka.Done
+          }
+        }}
+      }
     }
   }
 }

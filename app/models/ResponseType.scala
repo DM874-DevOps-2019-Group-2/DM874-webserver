@@ -5,16 +5,14 @@ import io.circe.{Decoder, JsonObject}
 object ResponseType {
   import io.circe.syntax._
   case object Ping extends ResponseType
-
-  implicit val dec: io.circe.Decoder[ResponseType] = for {
-    visitorType <- Decoder[String].prepare(_.downField("$type"))
-    value <- visitorType match {
-      case "Ping" => Decoder.const(Ping)
-    }
-  } yield { value }
+  case class CodeSnippetUploadUrl(url: String) extends ResponseType
 
   implicit val enc: io.circe.Encoder[ResponseType] = {
     case Ping => JsonObject.empty.add("$type", "Ping".asJson).asJson
+    case x:CodeSnippetUploadUrl => {
+      implicit val localEnc: io.circe.ObjectEncoder[CodeSnippetUploadUrl] = io.circe.generic.semiauto.deriveEncoder[CodeSnippetUploadUrl]
+      x.asJsonObject.add("$type", "CodeSnippetUploadUrl".asJson).asJson
+    }
   }
 }
 
