@@ -22,7 +22,7 @@ libraryDependencies += "org.apache.kafka" %% "kafka" % "2.3.0"
 libraryDependencies += "org.apache.zookeeper" % "zookeeper" % "3.5.5"
 libraryDependencies += "com.typesafe.akka" %% "akka-stream-kafka" % "1.0.5"
 libraryDependencies += "org.typelevel" %% "cats-effect" % "2.0.0"
-libraryDependencies += "sdis" %% "sdis" % "1.0"
+libraryDependencies += "io.github.valdemargr" %% "sdis" % "1.1.3"
 
 
 // Adds additional packages into Twirl

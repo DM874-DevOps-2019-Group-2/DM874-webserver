@@ -24,7 +24,7 @@ class MessageHandlerService (
 
   def handleRequest(sessionId: String, user: User, requestType: RequestType): Future[akka.Done] = requestType match {
     case RequestType.SendMessage(message, destinationUsers) => {
-      val dbOp: Future[Option[Seq[(Int, String)]]] = ???
+      val dbOp: Future[Option[Seq[(String, String)]]] = ???
 
       dbOp.flatMap{
         //Handle by directing it onwards
@@ -33,10 +33,10 @@ class MessageHandlerService (
           Future.successful(akka.Done)
         }
         case Some(t) => {
-          val tasks = t.sortBy(_._1)
+          val tasks = t.sortBy(_._1.toInt)
           val messageId = java.util.UUID.randomUUID().toString
 
-          val destinations = destinationUsers.map(destId => models.OutboundMessage(
+          val destinations = destinationUsers.map(destId => models.MessageDestination(
             destinationId = destId,
             message = message,
             messageId = messageId,
@@ -47,26 +47,25 @@ class MessageHandlerService (
 
           val outModel = EventSourcingModel(
             messageId = messageId,
-            sender = user,
+            sessionId = sessionId,
+            senderId = user.id,
             messageDestinations = destinations,
-            tasks = tasks.tail
+            eventDestinations = tasks.tail
           )
 
           akkaKafkaSendOnce.sendExactlyOnce(tasks.head._2, outModel.asJson.noSpaces)
         }
       }
     }
-      //Handle it here
+
+    //Handle it here
     case RequestType.ChangePassword(newPassword) => {
       import com.github.t3hnar.bcrypt._
       db.run(UsersTable.users.filter(_.id === user.id).filter(_.username === user.username).map(_.password).update(newPassword.bcrypt)).map(_ => Done)
     }
-      //File store upload, then notification
+    //Generate filestore URL
     case RequestType.UploadHandlerSnippet => {
-      //Todo Handle data?
-      val data: String = ???
-
-      fileStore.putAsync(config.get[String]("user.scripts.bucket"), user.id.toString, data)
+      ???
     }
   }
 }

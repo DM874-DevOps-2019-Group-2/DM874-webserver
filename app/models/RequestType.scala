@@ -8,7 +8,6 @@ object RequestType {
   case class SendMessage(message: String, destinationUsers: Seq[Int]) extends RequestType
   case class ChangePassword(newPassword: String) extends RequestType
   case object UploadHandlerSnippet extends RequestType
-  case object Pong extends RequestType
 
   object SendMessage {
     implicit val dec: io.circe.Decoder[SendMessage] = io.circe.generic.semiauto.deriveDecoder[SendMessage]
@@ -25,7 +24,6 @@ object RequestType {
       case "SendMessage" =>  Decoder[SendMessage]
       case "ChangePassword" => Decoder[ChangePassword]
       case "UploadHandlerSnippet" => Decoder.const(UploadHandlerSnippet)
-      case "Pong" => Decoder.const(Pong)
     }
   } yield { value }
 
@@ -33,7 +31,6 @@ object RequestType {
     case x: SendMessage => x.asJsonObject.add("$type", "SendMessage".asJson).asJson
     case x: ChangePassword => x.asJsonObject.add("$type", "ChangePassword".asJson).asJson
     case UploadHandlerSnippet => JsonObject.empty.add("$type", "UploadHandlerSnippet".asJson).asJson
-    case Pong => JsonObject.empty.add("$type", "Pong".asJson).asJson
   }
 }
 

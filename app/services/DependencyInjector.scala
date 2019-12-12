@@ -15,7 +15,7 @@ class DependencyInjector @Inject()(
                                   )(implicit system: ActorSystem, mat: Materializer) {
   import scala.concurrent.ExecutionContext.Implicits.global
 
-  lazy val redisClient = RedisClient.getInstance(config.getString("redis.hostname").get, config.getInt("redis.port").get)
+  lazy val redisClient = RedisClient.getInstance(config.getString("redis.hostname").get, config.getInt("redis.port").get).get
 
   lazy val fileStore = new FileStore()
   lazy val jwtService = new JWTService(config)

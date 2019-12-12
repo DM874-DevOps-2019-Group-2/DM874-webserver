@@ -12,6 +12,7 @@ import play.api._
 import play.api.db.slick.{DatabaseConfigProvider, HasDatabaseConfigProvider}
 import play.api.mvc._
 import schema.{DBUser, UsersDAO, UsersTable}
+import sdis.operations.StringOps
 import security.{JWTAuthentication, JWTService}
 import services.WebsocketManager
 import slick.jdbc.JdbcProfile
@@ -33,6 +34,9 @@ class WebsocketController @Inject()(
                                 protected val dbConfigProvider: DatabaseConfigProvider,
                                 dependencyInjector: services.DependencyInjector
                               )(implicit mat: Materializer, system: ActorSystem) extends AbstractController(cc) with ClassLogger with HasDatabaseConfigProvider[JdbcProfile] {
+  val listenTopic = configuration.getString("kafka.streams.topic").get
+  val websocketTtl = configuration.getInt("connection.ttlseconds").get
+
   def userSocket = WebSocket.accept[String, String] { req =>
     import io.circe.syntax._
 
@@ -58,7 +62,6 @@ class WebsocketController @Inject()(
     })
 
     import scala.concurrent.duration._
-    val websocketTtl = configuration.getInt("connection.ttlseconds").get
 
     oUser match {
       //Do nothing
@@ -72,20 +75,20 @@ class WebsocketController @Inject()(
       }
       case Some(user) => {
         val sessionId = user.id.toString + java.util.UUID.randomUUID().toString
+        val expireQuery = StringOps.expire(user.id.toString, websocketTtl)
 
         //Create a queue'd source and bundle it with the request
-        val authTopic = configuration.get[String]("auth.topic")
-
-        val out = Source.fromFutureSource(akkaKafkaSendOnce.sendExactlyOnce(authTopic, UserWithSession(sessionId, user).asJson.noSpaces).map(_ =>
+        val out = {
           Source.queue[String](1000, OverflowStrategy.backpressure).merge(Source.maybe[String])
-          //Ping every ttl*0.8 time
-          .merge(Source(0 to Int.MaxValue).throttle(1, (websocketTtl*0.8) seconds).map(_ => (ResponseType.Ping: ResponseType).asJson.noSpaces))
-          //on every request, refresh ttl
-          .map{ x =>
-            WebsocketManager.updateTTL(sessionId, websocketTtl seconds)
-            x
+            //Ping every ttl*0.8 time
+            .merge(Source(0 to Int.MaxValue).throttle(1, (websocketTtl * 0.8) seconds).map(_ => (ResponseType.Ping: ResponseType).asJson.noSpaces))
+            //on every request, refresh ttl
+            .map { x =>
+              dependencyInjector.redisClient.run(expireQuery)
+              WebsocketManager.updateTTL(sessionId, websocketTtl seconds)
+              x
           }
-        ))
+        }
 
         //Handle incoming through the socket
         val in = Sink.foreachAsync[String](2){ msg =>
@@ -97,20 +100,17 @@ class WebsocketController @Inject()(
               logger.error(s"Error: ${e}")
               Future.successful(akka.Done)
             }
-            case Right(rt) => rt match {
-              case RequestType.Pong => {
-                WebsocketManager.updateTTL(sessionId, websocketTtl seconds)
-                Future.successful(akka.Done)
-              }
-              case _ => dependencyInjector.messageHandlerService.handleRequest(sessionId, user, rt)
-            }
+            case Right(rt) => dependencyInjector.messageHandlerService.handleRequest(sessionId, user, rt)
           }
 
           f.map(_ => ())
         }
 
-        Flow.fromSinkAndSourceMat[String, String, Future[akka.Done], Future[SourceQueueWithComplete[String]], Unit](in, out).apply { case (_, q) =>
-          q.map(queue => WebsocketManager.addClient(sessionId, queue, websocketTtl seconds))
+        Flow.fromSinkAndSourceMat[String, String, Future[akka.Done], SourceQueueWithComplete[String], Unit](in, out).apply { case (_, q) =>
+          val insQs = sdis.operations.SetOps.sadd(user.id.toString, listenTopic)
+          dependencyInjector.redisClient.run(insQs)
+          dependencyInjector.redisClient.run(expireQuery)
+          WebsocketManager.addClient(sessionId, q, websocketTtl seconds)
         }
       }
     }

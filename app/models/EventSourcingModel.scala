@@ -6,8 +6,9 @@ object EventSourcingModel {
 }
 
 case class EventSourcingModel(
-                             messageId: String,
-                             sender: User,
-                             messageDestinations: Seq[OutboundMessage],
-                             tasks: Seq[(Int, String)]
+                               messageId: String,
+                               sessionId: String,
+                               senderId: Int,
+                               messageDestinations: Seq[MessageDestination],
+                               eventDestinations: Seq[(String, String)]
                              )
