@@ -27,38 +27,27 @@ class MessageHandlerService (
 
   def handleRequest(sessionId: String, user: User, requestType: RequestType): Future[akka.Done] = requestType match {
     case RequestType.SendMessage(message, destinationUsers) => {
-      val dbOp: Future[Option[Seq[(String, String)]]] = ???
+      val tasks = sys.env("EVENT_DESTINATIONS").split(',').toSeq.map(_.split(':').toSeq).map{ case x1 :: x2 :: Nil => (x1, x2) }
+      val messageId = java.util.UUID.randomUUID().toString
 
-      dbOp.flatMap{
-        //Handle by directing it onwards
-        case None => {
-          logger.error(s"Failed to find EventSourcingModel")
-          Future.successful(akka.Done)
-        }
-        case Some(t) => {
-          val tasks = t.sortBy(_._1.toInt)
-          val messageId = java.util.UUID.randomUUID().toString
+      val destinations = destinationUsers.map(destId => models.MessageDestination(
+        destinationId = destId,
+        message = message,
+        messageId = messageId,
+        fromAutoReply = false
+      ))
 
-          val destinations = destinationUsers.map(destId => models.MessageDestination(
-            destinationId = destId,
-            message = message,
-            messageId = messageId,
-            fromAutoReply = false
-          ))
+      import io.circe.syntax._
 
-          import io.circe.syntax._
+      val outModel = EventSourcingModel(
+        messageId = messageId,
+        sessionId = sessionId,
+        senderId = user.id,
+        messageDestinations = destinations,
+        eventDestinations = tasks.tail
+      )
 
-          val outModel = EventSourcingModel(
-            messageId = messageId,
-            sessionId = sessionId,
-            senderId = user.id,
-            messageDestinations = destinations,
-            eventDestinations = tasks.tail
-          )
-
-          akkaKafkaSendOnce.sendExactlyOnce(tasks.head._2, outModel.asJson.noSpaces)
-        }
-      }
+      akkaKafkaSendOnce.sendExactlyOnce(tasks.head._2, outModel.asJson.noSpaces)
     }
     //Generate filestore URL
     case RequestType.UploadHandlerSnippet => {
