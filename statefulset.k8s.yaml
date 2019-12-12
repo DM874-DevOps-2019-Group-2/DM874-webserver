@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: webserver
+spec:
+  replicas: 1
+  serviceName: "webserver"
+  selector:
+    matchLabels:
+      app: webserver
+  updateStrategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: webserver
+    spec:
+      containers:
+        - name: webserver-container
+          image: WEBSERVER_IMAGE
+          imagePullPolicy: Always
+          envFrom:
+            - configMapRef:
+                name: redis-connection-config
+            - configMapRef:
+                name: code-snippet-storage-config
+            - configMapRef:
+                name: webserver-config
+            - secretRef:
+                name: jwt-secret
+            - configMapRef:
+                name: kafka-connection-config
+          resources:
+            requests:
+              memory: "300Mi"
+              cpu: "500m"
+            limits:
+              memory: "1500Mi"
+              cpu: "2000m"

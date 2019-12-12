@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: webserver-config
+data:
+  CONSUMER_TOPIC: "webserver-topic"
+  KAFKA_STREAMS_STATEDIR: "/tmp/kstreams"
+  CONNECTION_TTL_SECONDS: "600"
+  EVENT_DESTINATIONS: "router-topic"
