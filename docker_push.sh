@@ -30,5 +30,5 @@ then
 fi
 
 echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
-docker tag $LOCAL_IMAGE $DOCKER_SLUG:$TRAVIS_COMMIT
-docker push $DOCKER_SLUG:$TRAVIS_COMMIT
+docker tag webserver dm874/webserver:$TRAVIS_COMMIT
+docker push dm874/webserver:$TRAVIS_COMMIT
