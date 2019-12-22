@@ -11,7 +11,7 @@ import models.{EventSourcingModel, RequestType, ResponseType, User}
 import play.api._
 import play.api.db.slick.{DatabaseConfigProvider, HasDatabaseConfigProvider}
 import play.api.mvc._
-import sdis.operations.StringOps
+import sdis.operations.{RedisStringOperations}
 import security.JWTService
 import services.WebsocketManager
 import slick.jdbc.JdbcProfile
@@ -70,7 +70,7 @@ class WebsocketController @Inject()(
       }
       case Some(user) => {
         val sessionId = user.id.toString + java.util.UUID.randomUUID().toString
-        val expireQuery = StringOps.expire(user.id.toString, websocketTtl)
+        val expireQuery = RedisStringOperations.expire(user.id.toString, websocketTtl)
 
         //Create a queue'd source and bundle it with the request
         val out = {
@@ -102,7 +102,7 @@ class WebsocketController @Inject()(
         }
 
         Flow.fromSinkAndSourceMat(in, out) { case (_, q) =>
-          val insQs = sdis.operations.SetOps.sadd(user.id.toString, listenTopic)
+          val insQs = sdis.operations.RedisSetOperations.sadd(user.id.toString, listenTopic)
           dependencyInjector.redisClient.run(insQs)
           dependencyInjector.redisClient.run(expireQuery)
           WebsocketManager.addClient(sessionId, user.id, q, websocketTtl seconds)
