@@ -36,7 +36,7 @@ class WebsocketController @Inject()(
     import io.circe.syntax._
 
     //Parse JWT
-    val oUser = (req.headers.get("dm874_jwt") match {
+    val oUser = (req.headers.get("Sec-WebSocket-Protocol") match {
       case Some(jwt) => {
         //Authenticate JWT
         (dependencyInjector.jwtService.tryDecode(jwt) match {
