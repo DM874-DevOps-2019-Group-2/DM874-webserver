@@ -24,18 +24,11 @@ class MessageHandlerService (
   extends ClassLogger {
   val codeSnippetBucket = config.getString("code-snippet.bucket").get
   val codeSnippetTopic = config.getString("code-snippet.topic").get
+  val routeTopic = config.getString("router.topic").get
 
   def handleRequest(sessionId: String, user: User, requestType: RequestType): Future[akka.Done] = requestType match {
     case RequestType.SendMessage(message, destinationUsers) => {
-      val tasks = sys.env("EVENT_DESTINATIONS").split(',').toSeq.map(_.split(':').toSeq).map{ case x1 :: x2 :: Nil => (x1, x2) }
       val messageId = java.util.UUID.randomUUID().toString
-
-      val destinations = destinationUsers.map(destId => models.MessageDestination(
-        destinationId = destId,
-        message = message,
-        messageId = messageId,
-        fromAutoReply = false
-      ))
 
       import io.circe.syntax._
 
@@ -43,17 +36,19 @@ class MessageHandlerService (
         messageId = messageId,
         sessionId = sessionId,
         senderId = user.id,
-        messageDestinations = destinations,
-        eventDestinations = tasks.tail
+        messageBody = message,
+        recipientIds = destinationUsers,
+        eventDestinations = Seq(routeTopic),
+        fromAutoReply = false
       )
 
-      akkaKafkaSendOnce.sendExactlyOnce(tasks.head._2, outModel.asJson.noSpaces)
+      akkaKafkaSendOnce.sendExactlyOnce(outModel.eventDestinations.head, outModel.asJson.noSpaces)
     }
     //Generate filestore URL
     case RequestType.UploadHandlerSnippet => {
       import io.circe.syntax._
 
-      akkaKafkaSendOnce.sendExactlyOnce(codeSnippetTopic, CodeSnippetNotification(codeSnippetBucket, user.id.toString, CodeSnippetNotification.Insert).asJson.noSpaces).flatMap{ _ =>
+      akkaKafkaSendOnce.sendExactlyOnce(codeSnippetTopic, CodeSnippetNotification(user.id, CodeSnippetNotification.recv, CodeSnippetNotification.enable).asJson.noSpaces).flatMap{ _ =>
         val url = storage.signUrl(BlobInfo.newBuilder(codeSnippetBucket, user.id.toString).build(), 1, TimeUnit.HOURS).toString
 
         val offer = WebsocketManager.sockets.get(sessionId).map(_.offer((ResponseType.CodeSnippetUploadUrl(url): ResponseType).asJson.noSpaces)).getOrElse(Future.successful(QueueOfferResult.Failure(new Exception("Failed to find socket"))))

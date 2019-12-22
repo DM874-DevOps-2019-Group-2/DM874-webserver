@@ -9,6 +9,8 @@ case class EventSourcingModel(
                                messageId: String,
                                sessionId: String,
                                senderId: Int,
-                               messageDestinations: Seq[MessageDestination],
-                               eventDestinations: Seq[(String, String)]
+                               messageBody: String,
+                               recipientIds: Seq[Int],
+                               fromAutoReply: Boolean,
+                               eventDestinations: Seq[String]
                              )
