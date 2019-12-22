@@ -19,6 +19,22 @@ spec:
         - name: webserver-container
           image: WEBSERVER_IMAGE
           imagePullPolicy: Always
+          env:
+            - name: ROUTE_MESSAGE_TOPIC
+              valueFrom:
+                configMapKeyRef:
+                  name: router-config
+                  key: ROUTE_MESSAGE_TOPIC
+            - name: CODE_SNIPPET_TOPIC
+              valueFrom:
+                configMapKeyRef:
+                  name: jolie-exec-config
+                  key: JOLIE_EXEC_CONFIG_TOPIC
+            - name: CODE_SNIPPET_BUCKET
+              valueFrom:
+                configMapKeyRef:
+                  name: jolie-exec-config
+                  key: JOLIE_EXEC_GCS_BUCKET_NAME
           envFrom:
             - configMapRef:
                 name: redis-connection-config
@@ -30,6 +46,8 @@ spec:
                 name: jwt-secret
             - configMapRef:
                 name: kafka-connection-config
+            - configMapRef:
+                name: jolie-exec-config
           resources:
             requests:
               memory: "300Mi"
