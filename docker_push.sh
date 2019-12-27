@@ -17,12 +17,6 @@ then
 	exit 22
 fi
 
-if [ -z "$DOCKER_SLUG" ]
-then
-	>&2 echo "Docker slug not given, example: DOCKER_SLUG=dm874/webserver"
-	exit 22
-fi
-
 if [ -z "$TRAVIS_COMMIT" ]
 then
 	>&2 echo "TRAVIS_COMMIT not set, did you run outside of Travis CI?"
