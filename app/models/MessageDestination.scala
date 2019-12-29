@@ -6,6 +6,7 @@ object MessageDestination {
 }
 
 case class MessageDestination(
+                             senderId: Int,
                           destinationId: Int,
                           message: String
                           )

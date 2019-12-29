@@ -26,7 +26,7 @@ class KafkaGlueService(
           Future.successful(akka.Done)
         }
         case Right(value) => {
-          val data = (ResponseType.ReceiveMessage(value.message): ResponseType).asJson.noSpaces
+          val data = (ResponseType.ReceiveMessage(value.message, value.senderId): ResponseType).asJson.noSpaces
 
           WebsocketManager.userSessions.get(value.destinationId) match {
             case None => {

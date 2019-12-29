@@ -6,7 +6,7 @@ object ResponseType {
   import io.circe.syntax._
   case object Ping extends ResponseType
   case object CodeSnippetUploaded extends ResponseType
-  case class ReceiveMessage(msg: String) extends ResponseType
+  case class ReceiveMessage(msg: String, userId: Int) extends ResponseType
 
   implicit val enc: io.circe.Encoder[ResponseType] = {
     case Ping => JsonObject.empty.add("$type", "Ping".asJson).asJson
