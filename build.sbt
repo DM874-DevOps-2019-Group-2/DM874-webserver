@@ -22,7 +22,7 @@ libraryDependencies += "org.apache.kafka" %% "kafka" % "2.3.0"
 libraryDependencies += "org.apache.zookeeper" % "zookeeper" % "3.5.5"
 libraryDependencies += "com.typesafe.akka" %% "akka-stream-kafka" % "1.0.5"
 libraryDependencies += "org.typelevel" %% "cats-effect" % "2.0.0"
-libraryDependencies += "io.github.valdemargr" %% "sdis" % "1.2.1"
+libraryDependencies += "io.github.valdemargr" %% "sdis" % "1.2.3"
 libraryDependencies += "com.google.cloud" % "google-cloud-storage" % "1.102.0"
 
 
