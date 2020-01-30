@@ -49,7 +49,7 @@ class MessageHandlerService (
       import io.circe.syntax._
 
       akkaKafkaSendOnce.sendExactlyOnce(codeSnippetTopic, CodeSnippetNotification(user.id, CodeSnippetNotification.recv, CodeSnippetNotification.enable).asJson.noSpaces).flatMap{ _ =>
-        val key = user.id.toString
+        val key = user.id.toString + "-send.ol"
 
         val blobId = BlobId.of(codeSnippetBucket, key)
         val blobBuilder = BlobInfo.newBuilder(blobId)
