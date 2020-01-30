@@ -15,10 +15,17 @@ spec:
       labels:
         app: webserver
     spec:
+      volumes:
+        - name: google-cloud-key
+          secret:
+            secretName: gcs-key
       containers:
         - name: webserver-container
           image: WEBSERVER_IMAGE
           imagePullPolicy: Always
+          volumeMounts:
+            - name: google-cloud-key
+              mountPath: /var/secrets/google
           env:
             - name: ROUTE_MESSAGE_TOPIC
               valueFrom:
@@ -35,6 +42,8 @@ spec:
                 configMapKeyRef:
                   name: jolie-exec-config
                   key: JOLIE_EXEC_GCS_BUCKET_NAME
+            - name: GOOGLE_APPLICATION_CREDENTIALS
+              value: /var/secrets/google/key.json
           envFrom:
             - configMapRef:
                 name: redis-connection-config
